@@ -7,7 +7,9 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
   useVisit,
+  userHasAccess,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import { useInvalidateLabOrders } from '../../laboratory.resource';
@@ -20,6 +22,8 @@ const AddTestOrderButton = () => {
   const { t } = useTranslation();
   const { laboratoryOrderTypeUuid } = useConfig<Config>();
   const invalidateLabOrders = useInvalidateLabOrders();
+  const session = useSession();
+  const canAddTestOrder = userHasAccess('Add Orders', session?.user) || userHasAccess('Edit Orders', session?.user);
 
   const [selectedPatient, setSelectedPatient] = useState<{ uuid: string; patient: fhir.Patient } | null>(null);
   const closeWorkspaceRef = useRef<(() => Promise<void>) | null>(null);
@@ -113,6 +117,11 @@ const AddTestOrderButton = () => {
       },
     );
   };
+
+  if (!canAddTestOrder) {
+    return null;
+  }
+
   return (
     <Button
       className={styles.buttonContainer}
