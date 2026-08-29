@@ -23,7 +23,7 @@ const AddTestOrderButton = () => {
   const { laboratoryOrderTypeUuid } = useConfig<Config>();
   const invalidateLabOrders = useInvalidateLabOrders();
   const session = useSession();
-  const canAddTestOrder = userHasAccess('Add Orders', session?.user) || userHasAccess('Edit Orders', session?.user);
+  const canAddTestOrder = userHasAccess('Task: patientChart.addLabOrder', session?.user);
 
   const [selectedPatient, setSelectedPatient] = useState<{ uuid: string; patient: fhir.Patient } | null>(null);
   const closeWorkspaceRef = useRef<(() => Promise<void>) | null>(null);
