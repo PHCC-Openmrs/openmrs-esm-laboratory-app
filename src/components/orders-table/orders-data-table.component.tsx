@@ -24,7 +24,16 @@ import {
   Tile,
 } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
-import { ExtensionSlot, formatDate, parseDate, showModal, useConfig, usePagination } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  formatDate,
+  parseDate,
+  showModal,
+  useConfig,
+  usePagination,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import { OrdersDateRangePicker } from './orders-date-range-picker.component';
 import ListOrderDetails from './list-order-details.component';
 import { useLabOrders } from '../../laboratory.resource';
@@ -98,6 +107,10 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [filter, setFilter] = useState<FulfillerStatus>(null);
   const [searchString, setSearchString] = useState('');
   const { labTableColumns, patientIdIdentifierTypeUuid, usePreferredPatientIdentifier } = useConfig<Config>();
+  const session = useSession();
+  // Edit results launches the same test-results-form-workspace as Add lab results, so it must
+  // match that action's gate rather than being left open to everyone who can see a completed order.
+  const canEditLabResults = userHasAccess('Task: laboratory.addLabResults', session?.user);
 
   const { labOrders, isLoading } = useLabOrders({
     status: props.useFilter ? filter : props.fulfillerStatus,
@@ -253,11 +266,13 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               // Without tabIndex={0} here, the overflow menu incorrectly sets initial focus to the second item instead of the first.
               tabIndex={0}
             />
-            <OverflowMenuItem
-              className={styles.menuitem}
-              itemText={t('editResults', 'Edit results')}
-              onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
-            />
+            {canEditLabResults && (
+              <OverflowMenuItem
+                className={styles.menuitem}
+                itemText={t('editResults', 'Edit results')}
+                onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
+              />
+            )}
             <OverflowMenuItem
               className={styles.menuitem}
               itemText={t('printTestResults', 'Print test results')}
@@ -267,7 +282,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         </div>
       ) : null,
     }));
-  }, [paginatedLabOrders, t]);
+  }, [paginatedLabOrders, t, canEditLabResults]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
