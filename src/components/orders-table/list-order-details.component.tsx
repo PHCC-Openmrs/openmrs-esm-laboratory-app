@@ -41,6 +41,21 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
   const { t } = useTranslation();
   const originalOrders = groupedOrders?.originalOrders ?? [];
 
+  const fulfillerStatusLabels: Record<string, string> = {
+    RECEIVED: t('received', 'Received'),
+    IN_PROGRESS: t('In progress', 'In progress'),
+    COMPLETED: t('completed', 'Completed'),
+    DECLINED: t('declined', 'Declined'),
+    EXCEPTION: t('exception', 'Exception'),
+    ON_HOLD: t('onHold', 'On hold'),
+    DRAFT: t('draft', 'Draft'),
+  };
+
+  const getFulfillerStatusLabel = (fulfillerStatus: string | undefined) =>
+    fulfillerStatus
+      ? fulfillerStatusLabels[fulfillerStatus] ?? capitalize(fulfillerStatus.replace('_', ' '))
+      : undefined;
+
   const getOrderReason = (order: (typeof originalOrders)[number]) => {
     if (order?.orderReason) {
       return order.orderReason.display;
@@ -75,7 +90,7 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
                     className={styles.statusPill}
                     data-status={(order.fulfillerStatus ?? 'Order not picked').replace('_', ' ')}
                   >
-                    {capitalize(order.fulfillerStatus?.replace('_', ' ')) || t('orderNotPicked', 'Order not picked')}
+                    {getFulfillerStatusLabel(order.fulfillerStatus) || t('orderNotPicked', 'Order not picked')}
                   </div>
                 }
               />

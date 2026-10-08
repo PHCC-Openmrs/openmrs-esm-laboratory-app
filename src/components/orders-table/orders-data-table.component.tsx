@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   DataTable,
   DataTableSkeleton,
@@ -138,6 +138,20 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     );
   }, [labOrders]);
 
+  const getSexLabel = useCallback(
+    (gender: string | undefined) => {
+      switch (gender) {
+        case 'M':
+          return t('maleAbbreviation', 'M');
+        case 'F':
+          return t('femaleAbbreviation', 'F');
+        default:
+          return gender;
+      }
+    },
+    [t],
+  );
+
   const groupedOrdersByPatient = useMemo(() => {
     if (labOrders && labOrders.length > 0) {
       const patientUuids = [...new Set(labOrders.map((order) => order.patient.uuid))];
@@ -161,7 +175,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
           patientName: patient?.person?.display,
           patientAge: patient?.person?.age,
           patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
-          patientSex: patient?.person?.gender,
+          patientSex: getSexLabel(patient?.person?.gender),
           totalOrders: flattenedLabOrdersForPatient.length,
           orders: flattenedLabOrdersForPatient,
           originalOrders: labOrdersForPatient,
@@ -171,7 +185,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     } else {
       return [];
     }
-  }, [flattenedLabOrders, labOrders, patientIdIdentifierTypeUuid, usePreferredPatientIdentifier]);
+  }, [flattenedLabOrders, getSexLabel, labOrders, patientIdIdentifierTypeUuid, usePreferredPatientIdentifier]);
 
   const searchResults = useMemo(() => {
     if (searchString && searchString.trim() !== '') {
@@ -258,7 +272,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
       ),
       action: groupedOrder.orders.some((o) => o.fulfillerStatus === 'COMPLETED') ? (
         <div className={styles.actionCell}>
-          <OverflowMenu aria-label="Actions" flipped iconDescription="Actions">
+          <OverflowMenu aria-label={t('actions', 'Actions')} flipped iconDescription={t('actions', 'Actions')}>
             <ExtensionSlot
               className={styles.transitionOverflowMenuItemSlot}
               name="transition-overflow-menu-item-slot"
@@ -368,6 +382,18 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             <Pagination
               forwardText={t('nextPage', 'Next page')}
               backwardText={t('previousPage', 'Previous page')}
+              itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+              itemRangeText={(min, max, total) =>
+                t('paginationItemRange', '{{min}}–{{max}} of {{total}} items', { min, max, total })
+              }
+              pageRangeText={(_current, total) =>
+                t('paginationPageRange', {
+                  count: total,
+                  total,
+                  defaultValue_one: 'of {{total}} page',
+                  defaultValue_other: 'of {{total}} pages',
+                })
+              }
               page={currentPage}
               pageSize={currentPageSize}
               pageSizes={pageSizes}
