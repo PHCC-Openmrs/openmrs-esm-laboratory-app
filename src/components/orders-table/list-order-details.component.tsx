@@ -14,6 +14,7 @@ import { capitalize } from 'lodash-es';
 import { ExtensionSlot, formatDate, parseDate } from '@openmrs/esm-framework';
 import { urgencyTagType, formatUrgencyLabel } from '../../utils';
 import { type GroupedOrders } from '../../types';
+import PickAllLabRequests from './pick-all-lab-requests.component';
 import styles from './list-order-details.scss';
 
 type OrderDetailsRowProps = {
@@ -166,6 +167,7 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
           </div>
         </div>
       ))}
+      <PickAllLabRequests orders={originalOrders} />
     </div>
   );
 };

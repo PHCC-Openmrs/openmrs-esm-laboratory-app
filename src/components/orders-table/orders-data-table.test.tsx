@@ -9,6 +9,8 @@ import OrdersDataTable from './orders-data-table.component';
 
 vi.mock('../../laboratory.resource', () => ({
   useLabOrders: vi.fn(),
+  setFulfillerStatus: vi.fn(),
+  useInvalidateLabOrders: vi.fn(() => vi.fn()),
 }));
 
 const mockUseConfig = vi.mocked(useConfig<Config>);

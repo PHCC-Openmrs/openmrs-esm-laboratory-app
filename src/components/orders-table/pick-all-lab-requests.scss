@@ -1,0 +1,13 @@
+@use '@carbon/layout';
+
+.pickAllContainer {
+  display: flex;
+  justify-content: flex-end;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}
+
+.orderList {
+  margin-top: layout.$spacing-05;
+  list-style: disc;
+  padding-left: layout.$spacing-05;
+}
