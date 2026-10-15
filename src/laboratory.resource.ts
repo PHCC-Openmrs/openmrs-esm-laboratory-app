@@ -12,6 +12,29 @@ const useLabOrdersDefaultParams: UseLabOrdersParams = {
   includePatientId: false,
 };
 
+// The REST API returns only its default page (50 results) unless told otherwise, so the orders are
+// requested page by page until the server reports no further page. Counts and tables then reflect
+// every order instead of silently stopping at 50.
+const LAB_ORDERS_PAGE_SIZE = 100;
+// Safety net so a misbehaving server that always reports a next page cannot loop forever.
+const LAB_ORDERS_MAX_PAGES = 100;
+
+async function fetchAllLabOrders(url: string): Promise<{ data: { results: Array<Order> } }> {
+  const results: Array<Order> = [];
+  for (let page = 0; page < LAB_ORDERS_MAX_PAGES; page++) {
+    const response = await openmrsFetch<{ results: Array<Order>; links?: Array<{ rel: string }> }>(
+      `${url}&limit=${LAB_ORDERS_PAGE_SIZE}&startIndex=${results.length}`,
+    );
+    const pageResults = response.data?.results ?? [];
+    results.push(...pageResults);
+    const hasNextPage = response.data?.links?.some((link) => link.rel === 'next');
+    if (!hasNextPage || pageResults.length === 0) {
+      break;
+    }
+  }
+  return { data: { results } };
+}
+
 interface UseLabOrdersParams {
   status: FulfillerStatus;
   newOrdersOnly: boolean;
@@ -52,7 +75,7 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
 
   const { data, error, mutate, isLoading, isValidating } = useSWR<{
     data: { results: Array<Order> };
-  }>(`${url}`, openmrsFetch);
+  }>(`${url}`, fetchAllLabOrders);
 
   const filteredOrders = data?.data?.results?.filter(
     (order) => !newOrdersOnly || (order?.action === 'NEW' && order?.fulfillerStatus === null),
