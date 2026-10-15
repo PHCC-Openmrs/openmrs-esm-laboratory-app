@@ -67,10 +67,13 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
   let url = `${restBaseUrl}/order?orderTypes=${laboratoryOrderTypeUuid}&v=${customRepresentation}`;
   url = status ? url + `&fulfillerStatus=${status}` : url;
   url = excludeCanceled ? `${url}&excludeCanceledAndExpired=true&excludeDiscontinueOrders=true` : url;
+  // The date picker yields each picked date as midnight at the start of that day, so cover the whole
+  // first and last day; otherwise orders placed on the end date are left out (and a single-day range
+  // would be empty).
   url = dateRange
-    ? `${url}&activatedOnOrAfterDate=${dateRange.at(0).toISOString()}&activatedOnOrBeforeDate=${dateRange
-        .at(1)
-        .toISOString()}`
+    ? `${url}&activatedOnOrAfterDate=${dayjs(dateRange.at(0))
+        .startOf('day')
+        .toISOString()}&activatedOnOrBeforeDate=${dayjs(dateRange.at(1)).endOf('day').toISOString()}`
     : url;
 
   const { data, error, mutate, isLoading, isValidating } = useSWR<{
