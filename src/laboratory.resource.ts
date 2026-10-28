@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import dayjs from 'dayjs';
 import useSWR, { mutate } from 'swr';
-import { openmrsFetch, type Order, restBaseUrl, useAppContext, useConfig } from '@openmrs/esm-framework';
+import { fhirBaseUrl, openmrsFetch, type Order, restBaseUrl, useAppContext, useConfig } from '@openmrs/esm-framework';
 import type { DateFilterContext, FulfillerStatus } from './types';
 import { type Config } from './config-schema';
 
@@ -90,6 +90,48 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
     mutate,
     isValidating,
   };
+}
+
+interface FhirCondition {
+  clinicalStatus?: { coding?: Array<{ code?: string }> };
+  code?: { coding?: Array<{ display?: string }>; text?: string };
+}
+
+/**
+ * Retrieves the active conditions of the given patients -- what the patient chart's "Diagnoses"
+ * page records -- so the laboratory team can see them next to the orders.
+ *
+ * @returns the names of each patient's active conditions, keyed by patient uuid
+ */
+export function useActiveConditions(patientUuids: Array<string>) {
+  const { data } = useSWR(
+    patientUuids.length ? ['lab-active-conditions', ...patientUuids] : null,
+    ([, ...uuids]: Array<string>) =>
+      Promise.all(
+        uuids.map((uuid) =>
+          openmrsFetch<{ entry?: Array<{ resource: FhirCondition }> }>(
+            `${fhirBaseUrl}/Condition?patient=${uuid}&_count=100`,
+          )
+            .then((response) => [
+              ...new Set(
+                (response.data?.entry ?? [])
+                  .map((entry) => entry.resource)
+                  .filter((condition) => condition.clinicalStatus?.coding?.[0]?.code?.toLowerCase() === 'active')
+                  .map((condition) => condition.code?.coding?.[0]?.display ?? condition.code?.text)
+                  .filter(Boolean),
+              ),
+            ])
+            // one patient whose conditions cannot be read must not hide the others
+            .catch(() => [] as Array<string>),
+        ),
+      ),
+  );
+
+  const conditionsByPatient: Record<string, Array<string>> = {};
+  patientUuids.forEach((uuid, index) => {
+    conditionsByPatient[uuid] = data?.[index] ?? [];
+  });
+  return conditionsByPatient;
 }
 
 export function setFulfillerStatus(orderId: string, status: FulfillerStatus, abortController: AbortController) {

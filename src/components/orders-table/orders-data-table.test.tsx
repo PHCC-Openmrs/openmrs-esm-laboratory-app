@@ -4,17 +4,19 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useConfig, getDefaultsFromConfigSchema, type Order, type Patient } from '@openmrs/esm-framework';
 import { configSchema, type Config } from '../../config-schema';
-import { useLabOrders } from '../../laboratory.resource';
+import { useActiveConditions, useLabOrders } from '../../laboratory.resource';
 import OrdersDataTable from './orders-data-table.component';
 
 vi.mock('../../laboratory.resource', () => ({
   useLabOrders: vi.fn(),
+  useActiveConditions: vi.fn(() => ({})),
   setFulfillerStatus: vi.fn(),
   useInvalidateLabOrders: vi.fn(() => vi.fn()),
 }));
 
 const mockUseConfig = vi.mocked(useConfig<Config>);
 const mockUseLabOrders = vi.mocked(useLabOrders);
+const mockUseActiveConditions = vi.mocked(useActiveConditions);
 
 function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0]) {
   const mockPatient1: Partial<Patient> = {
@@ -197,6 +199,28 @@ describe('OrdersDataTable', () => {
     expect(orderDetailsTable2).toHaveTextContent('01-Jan-2021');
     expect(orderDetailsTable2).toHaveTextContent('Received');
     expect(orderDetailsTable2).toHaveTextContent('Routine');
+  });
+
+  it('shows the active conditions of the patient next to urgency', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      labTableColumns: ['name', 'urgency', 'diagnoses', 'age', 'sex', 'totalOrders'],
+    });
+    mockUseActiveConditions.mockReturnValue({
+      'patient-uuid-1': ['Malaria', 'Anaemia'],
+    });
+
+    render(<OrdersDataTable />);
+
+    const rows = screen.getAllByRole('row');
+    const headerTexts = within(rows[0])
+      .getAllByRole('columnheader')
+      .map((cell) => cell.textContent);
+    expect(headerTexts.indexOf('Diagnoses')).toBe(headerTexts.indexOf('Urgency') + 1);
+    const dataRows = rows.slice(1).filter((row) => !row.classList.contains('hiddenRow'));
+    expect(dataRows[0]).toHaveTextContent('Malaria');
+    expect(dataRows[0]).toHaveTextContent('Anaemia');
+    expect(dataRows[1]).not.toHaveTextContent('Malaria');
   });
 
   it('renders the toolbar search at the same large size as the date range picker', () => {
