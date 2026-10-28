@@ -36,7 +36,7 @@ import {
 } from '@openmrs/esm-framework';
 import { OrdersDateRangePicker } from './orders-date-range-picker.component';
 import ListOrderDetails from './list-order-details.component';
-import { useLabOrders } from '../../laboratory.resource';
+import { useActiveConditions, useLabOrders } from '../../laboratory.resource';
 import { urgencyTagType, formatUrgencyLabel, urgencyPriority, getPatientIdentifier } from '../../utils';
 import type { FulfillerStatus, FlattenedOrder, Order } from '../../types';
 import { type Config } from '../../config-schema';
@@ -72,6 +72,12 @@ const labTableColumnSpec = {
     headerLabelKey: 'urgency',
     headerLabelDefault: 'Urgency',
     key: 'urgency',
+  },
+  diagnoses: {
+    // t('diagnoses', 'Diagnoses')
+    headerLabelKey: 'diagnoses',
+    headerLabelDefault: 'Diagnoses',
+    key: 'diagnoses',
   },
   totalOrders: {
     // t('totalOrders', 'Total Orders')
@@ -234,6 +240,12 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
 
+  const patientUuidsOnPage = useMemo(
+    () => (labTableColumns.includes('diagnoses') ? paginatedLabOrders.map((group) => group.patientUuid) : []),
+    [paginatedLabOrders, labTableColumns],
+  );
+  const conditionsByPatient = useActiveConditions(patientUuidsOnPage);
+
   const handleOrderStatusChange = ({ selectedItem }: { selectedItem: { value: FulfillerStatus; display: string } }) =>
     setFilter(selectedItem.value);
 
@@ -270,6 +282,15 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             ))}
         </div>
       ),
+      diagnoses: (
+        <div className={styles.urgencyTagsContainer}>
+          {(conditionsByPatient[groupedOrder.patientUuid] ?? []).map((condition) => (
+            <Tag key={condition} type="blue" size="sm">
+              {condition}
+            </Tag>
+          ))}
+        </div>
+      ),
       action: groupedOrder.orders.some((o) => o.fulfillerStatus === 'COMPLETED') ? (
         <div className={styles.actionCell}>
           <OverflowMenu aria-label={t('actions', 'Actions')} flipped iconDescription={t('actions', 'Actions')}>
@@ -296,7 +317,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         </div>
       ) : null,
     }));
-  }, [paginatedLabOrders, t, canEditLabResults]);
+  }, [paginatedLabOrders, t, canEditLabResults, conditionsByPatient]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;

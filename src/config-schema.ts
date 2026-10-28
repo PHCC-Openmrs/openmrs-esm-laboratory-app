@@ -1,6 +1,16 @@
 import { Type, validators } from '@openmrs/esm-framework';
 
-const allowedLabTableColumns = ['name', 'urgency', 'age', 'dob', 'sex', 'totalOrders', 'action', 'patientId'] as const;
+const allowedLabTableColumns = [
+  'name',
+  'urgency',
+  'diagnoses',
+  'age',
+  'dob',
+  'sex',
+  'totalOrders',
+  'action',
+  'patientId',
+] as const;
 type LabTableColumnName = (typeof allowedLabTableColumns)[number];
 
 export const configSchema = {
