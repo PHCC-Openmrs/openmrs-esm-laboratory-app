@@ -2,6 +2,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useTranslation } from 'react-i18next';
 import { useConfig, getDefaultsFromConfigSchema, type Order, type Patient } from '@openmrs/esm-framework';
 import { configSchema, type Config } from '../../config-schema';
 import { useActiveConditions, useLabOrders } from '../../laboratory.resource';
@@ -199,6 +200,26 @@ describe('OrdersDataTable', () => {
     expect(orderDetailsTable2).toHaveTextContent('01-Jan-2021');
     expect(orderDetailsTable2).toHaveTextContent('Received');
     expect(orderDetailsTable2).toHaveTextContent('Routine');
+  });
+
+  it('counts both patients and tests in the footer, since the summary tiles count tests', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+    });
+    // The react-i18next test mock returns the default text without interpolating it, so check the values passed.
+    const translation = useTranslation();
+    const tSpy = vi.spyOn(translation, 't');
+
+    render(<OrdersDataTable />);
+
+    // 3 orders for 2 patients: one row per patient, and the number of tests the tiles count.
+    expect(screen.getByText('{{min}}–{{max}} of {{total}} patients ({{tests}} tests)')).toBeInTheDocument();
+    expect(tSpy).toHaveBeenCalledWith(
+      'paginationPatientRange',
+      expect.any(String),
+      expect.objectContaining({ min: 1, max: 2, total: 2, tests: 3 }),
+    );
+    tSpy.mockRestore();
   });
 
   it('shows the active conditions of the patient next to urgency', () => {
