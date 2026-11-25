@@ -65,6 +65,7 @@
   "paginationPageRange_other": "من {{total}} صفحات",
   "paginationPageRange_two": "من صفحتين",
   "paginationPageRange_zero": "من {{total}} صفحات",
+  "paginationPatientRange": "المرضى: {{min}}–{{max}} من {{total}} (الفحوصات: {{tests}})",
   "patient": "المريض",
   "patientId": "رقم المريض",
   "pending review tests": "فحوصات بانتظار المراجعة",

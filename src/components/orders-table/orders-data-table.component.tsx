@@ -236,6 +236,11 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
       .map((column) => ({ ...column, id: column.key }));
   }, [t, flattenedLabOrders, labTableColumns]);
 
+  const totalTests = useMemo(
+    () => searchResults.reduce((count, group) => count + group.totalOrders, 0),
+    [searchResults],
+  );
+
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
@@ -404,8 +409,15 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               forwardText={t('nextPage', 'Next page')}
               backwardText={t('previousPage', 'Previous page')}
               itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+              // Rows are patients, each with one or more tests, while the summary tiles count tests. Name
+              // both so "of 23" here and "56" on the tile are not read as the same count.
               itemRangeText={(min, max, total) =>
-                t('paginationItemRange', '{{min}}–{{max}} of {{total}} items', { min, max, total })
+                t('paginationPatientRange', '{{min}}–{{max}} of {{total}} patients ({{tests}} tests)', {
+                  min,
+                  max,
+                  total,
+                  tests: totalTests,
+                })
               }
               pageRangeText={(_current, total) =>
                 t('paginationPageRange', {
